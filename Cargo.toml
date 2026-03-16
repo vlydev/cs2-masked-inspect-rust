@@ -1,0 +1,16 @@
+[package]
+name = "cs2-masked-inspect"
+version = "0.1.0"
+edition = "2021"
+description = "Offline encoder/decoder for CS2 masked inspect URLs — pure Rust, no dependencies"
+license = "MIT"
+repository = "https://github.com/vlydev/cs2-masked-inspect-rust"
+keywords = ["cs2", "csgo", "inspect", "protobuf", "steam"]
+categories = ["encoding", "game-development"]
+readme = "README.md"
+
+[dependencies]
+# none — pure std
+
+[dev-dependencies]
+# none

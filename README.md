@@ -80,6 +80,29 @@ assert!(is_masked("steam://...D00183C20B803..."));
 assert!(is_classic("steam://rungame/730/.../+csgo_econ_action_preview%20S76561199842063946A49749521570D2751293026650298712"));
 ```
 
+## Gen codes
+
+Generate a Steam inspect URL from item parameters (defindex, paintindex, paintseed, paintwear):
+
+```rust
+use cs2_masked_inspect::{generate, to_gen_code, parse_gen_code, GenerateOptions};
+
+// Generate a Steam inspect URL
+let url = generate(7, 474, 306, 0.22540508, GenerateOptions::default())?;
+
+// Convert to gen code
+let item = cs2_masked_inspect::ItemPreviewData { def_index: 7, ..Default::default() };
+let code = to_gen_code(&item, "!gen");
+
+// Parse a gen code
+let item2 = parse_gen_code("!gen 7 474 306 0.22540508")?;
+
+// Convert an existing inspect link directly to a gen code
+use cs2_masked_inspect::gen_code_from_link;
+let code = gen_code_from_link("steam://rungame/730/76561202255233023/+csgo_econ_action_preview%20001A...", "!gen")?;
+// "!gen 7 474 306 0.22540508"
+```
+
 ## Validation rules
 
 | Field | Rule |

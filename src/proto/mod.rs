@@ -20,6 +20,7 @@ pub fn encode_sticker(sticker: &Sticker) -> Vec<u8> {
     w.write_fixed32_opt(9, sticker.offset_z);
     w.write_uint32(10, sticker.pattern);
     w.write_uint32_opt(11, sticker.highlight_reel);
+    w.write_uint32_opt(12, sticker.paint_kit);
     w.finish()
 }
 
@@ -78,6 +79,7 @@ pub fn decode_sticker(data: &[u8]) -> Result<Sticker, Error> {
             (9, 5) => sticker.offset_z = Some(r.read_fixed32_f32()?),
             (10, 0) => sticker.pattern = r.read_uint32()?,
             (11, 0) => sticker.highlight_reel = Some(r.read_uint32()?),
+            (12, 0) => sticker.paint_kit = Some(r.read_uint32()?),
             _ => r.skip_field(wire_type)?,
         }
     }

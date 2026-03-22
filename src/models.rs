@@ -14,6 +14,8 @@ pub struct Sticker {
     pub pattern: u32,
     /// highlight_reel: omitted if None
     pub highlight_reel: Option<u32>,
+    /// paint_kit (proto field 12, varint): actual variant ID for sticker slabs; omitted if None
+    pub paint_kit: Option<u32>,
 }
 
 impl Default for Sticker {
@@ -30,6 +32,7 @@ impl Default for Sticker {
             offset_z: None,
             pattern: 0,
             highlight_reel: None,
+            paint_kit: None,
         }
     }
 }

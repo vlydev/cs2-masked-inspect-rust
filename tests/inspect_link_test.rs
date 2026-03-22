@@ -27,6 +27,13 @@ const CSFLOAT_B: &str = "00180720C80A280638A4E1F5FB03409A0562040800104C620408011
 const CSFLOAT_C: &str = "A2B2A2BA69A882A28AA192AECAA2D2B700A3A5AAA2B286FA7BA0D684BE72";
 // DefIndex=1355, Rarity=3, Quality=12, 1 keychain with highlight_reel=345, paint_wear=None
 
+// Sticker slab test vectors (defIndex=1355, quality=8)
+// keychains[0].sticker_id=37 (placeholder), keychains[0].paint_kit=variant ID
+const SLAB_A: &str = "918191895A9BB191B994A199F991E191339096999181B4F149A98D5C0889";
+// defIndex=1355, rarity=5, quality=8, keychains[0].sticker_id=37, keychains[0].paint_kit=7256
+const SLAB_B: &str = "CBDBCBD300C1EBCBE3C8FBC3A3CBBBCB69CACCC3CBDBEEAB58C9B8B67C83";
+// defIndex=1355, rarity=3, quality=8, keychains[0].sticker_id=37, keychains[0].paint_kit=275
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. Deserialize NATIVE_HEX
 // ─────────────────────────────────────────────────────────────────────────────
@@ -593,4 +600,90 @@ fn test_sticker_default() {
     assert_eq!(s.sticker_id, 0);
     assert_eq!(s.wear, None);
     assert_eq!(s.highlight_reel, None);
+    assert_eq!(s.paint_kit, None);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 11. Sticker slab test vectors (paint_kit field)
+// ─────────────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_slab_a_def_index() {
+    let item = deserialize(SLAB_A).expect("should deserialize SLAB_A");
+    assert_eq!(item.def_index, 1355);
+}
+
+#[test]
+fn test_slab_a_rarity() {
+    let item = deserialize(SLAB_A).expect("should deserialize SLAB_A");
+    assert_eq!(item.rarity, 5);
+}
+
+#[test]
+fn test_slab_a_quality() {
+    let item = deserialize(SLAB_A).expect("should deserialize SLAB_A");
+    assert_eq!(item.quality, 8);
+}
+
+#[test]
+fn test_slab_a_keychain_sticker_id() {
+    let item = deserialize(SLAB_A).expect("should deserialize SLAB_A");
+    assert_eq!(item.keychains.len(), 1);
+    assert_eq!(item.keychains[0].sticker_id, 37);
+}
+
+#[test]
+fn test_slab_a_keychain_paint_kit() {
+    let item = deserialize(SLAB_A).expect("should deserialize SLAB_A");
+    assert_eq!(item.keychains[0].paint_kit, Some(7256));
+}
+
+#[test]
+fn test_slab_b_def_index() {
+    let item = deserialize(SLAB_B).expect("should deserialize SLAB_B");
+    assert_eq!(item.def_index, 1355);
+}
+
+#[test]
+fn test_slab_b_rarity() {
+    let item = deserialize(SLAB_B).expect("should deserialize SLAB_B");
+    assert_eq!(item.rarity, 3);
+}
+
+#[test]
+fn test_slab_b_quality() {
+    let item = deserialize(SLAB_B).expect("should deserialize SLAB_B");
+    assert_eq!(item.quality, 8);
+}
+
+#[test]
+fn test_slab_b_keychain_sticker_id() {
+    let item = deserialize(SLAB_B).expect("should deserialize SLAB_B");
+    assert_eq!(item.keychains.len(), 1);
+    assert_eq!(item.keychains[0].sticker_id, 37);
+}
+
+#[test]
+fn test_slab_b_keychain_paint_kit() {
+    let item = deserialize(SLAB_B).expect("should deserialize SLAB_B");
+    assert_eq!(item.keychains[0].paint_kit, Some(275));
+}
+
+#[test]
+fn test_slab_roundtrip_paint_kit() {
+    let original = ItemPreviewData {
+        def_index: 1355,
+        rarity: 5,
+        quality: 8,
+        keychains: vec![Sticker {
+            slot: 0,
+            sticker_id: 37,
+            paint_kit: Some(7256),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+    let hex = serialize(&original).expect("serialize");
+    let decoded = deserialize(&hex).expect("deserialize");
+    assert_eq!(decoded.keychains[0].paint_kit, Some(7256));
 }

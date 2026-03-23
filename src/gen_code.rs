@@ -52,6 +52,9 @@ fn serialize_sticker_pairs(stickers: &[Sticker], pad_to: Option<usize>) -> Vec<S
             let wear = s.wear.unwrap_or(0.0);
             result.push(s.sticker_id.to_string());
             result.push(format_float(wear));
+            if let Some(pk) = s.paint_kit {
+                result.push(pk.to_string());
+            }
         }
     }
 
@@ -270,6 +273,66 @@ pub fn parse_gen_code(gen_code: &str) -> Result<ItemPreviewData, Error> {
 mod tests {
     use super::*;
     use crate::models::Sticker;
+
+    #[test]
+    fn test_to_gen_code_keychain_with_paint_kit() {
+        let item = ItemPreviewData {
+            def_index: 1355,
+            paint_index: 0,
+            paint_seed: 0,
+            paint_wear: Some(0.0),
+            keychains: vec![Sticker {
+                slot: 0,
+                sticker_id: 37,
+                wear: Some(0.0),
+                paint_kit: Some(929),
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        let code = to_gen_code(&item, "");
+        let tokens: Vec<&str> = code.split_whitespace().collect();
+        let n = tokens.len();
+        assert!(n >= 3, "expected at least 3 tokens, got {}: {:?}", n, code);
+        assert_eq!(tokens[n - 3], "37");
+        assert_eq!(tokens[n - 2], "0");
+        assert_eq!(tokens[n - 1], "929");
+    }
+
+    #[test]
+    fn test_to_gen_code_keychain_without_paint_kit_no_extra_token() {
+        let item = ItemPreviewData {
+            def_index: 7,
+            paint_index: 0,
+            paint_seed: 0,
+            paint_wear: Some(0.0),
+            keychains: vec![Sticker {
+                slot: 0,
+                sticker_id: 36,
+                wear: Some(0.0),
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        let code = to_gen_code(&item, "");
+        let tokens: Vec<&str> = code.split_whitespace().collect();
+        let n = tokens.len();
+        assert!(n >= 2, "expected at least 2 tokens, got {}: {:?}", n, code);
+        assert_eq!(tokens[n - 2], "36");
+        assert_eq!(tokens[n - 1], "0");
+    }
+
+    #[test]
+    fn test_gen_code_from_link_slab_url() {
+        let slab_url = "steam://run/730//+csgo_econ_action_preview%20819181994A8BA181A982B189E981F181238086898191A4E1208698F309C9";
+        let code = gen_code_from_link(slab_url, "").unwrap();
+        let tokens: Vec<&str> = code.split_whitespace().collect();
+        let n = tokens.len();
+        assert!(n >= 3, "expected at least 3 tokens, got {}: {:?}", n, code);
+        assert_eq!(tokens[n - 3], "37");
+        assert_eq!(tokens[n - 2], "0");
+        assert_eq!(tokens[n - 1], "929");
+    }
 
     #[test]
     fn test_to_gen_code_basic() {

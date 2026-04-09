@@ -111,6 +111,13 @@ fn extract_hex(input: &str) -> String {
         };
         let payload = &after[payload_start..];
 
+        // Skip optional '%' prefix before hex payload
+        let payload = if payload.first().copied() == Some(b'%') {
+            &payload[1..]
+        } else {
+            payload
+        };
+
         // Check if this is hybrid (S...A...D<hex>) or classic (S...A...D<decimal>)
         // Hybrid: after D, chars are lowercase hex including a-f
         // Classic: after D, chars are only decimal digits
@@ -231,6 +238,13 @@ pub fn is_masked(link: &str) -> bool {
             0
         };
         let payload = &after[payload_start..];
+
+        // Skip optional '%' prefix before hex payload
+        let payload = if payload.first().copied() == Some(b'%') {
+            &payload[1..]
+        } else {
+            payload
+        };
 
         if payload.first().copied() == Some(b'S') {
             // Classic or hybrid

@@ -11,6 +11,10 @@ pub enum Error {
     PayloadTooLarge,
     /// The payload is too small to be valid.
     PayloadTooSmall,
+    /// The input is not a valid inspect URL — odd-length hex, non-hex characters,
+    /// truncated payload, or proto bytes that fail to parse cleanly.
+    /// Callers should match on this for the "this URL is bad" category.
+    MalformedLink(String),
 }
 
 impl fmt::Display for Error {
@@ -20,6 +24,7 @@ impl fmt::Display for Error {
             Error::ParseError(msg) => write!(f, "parse error: {}", msg),
             Error::PayloadTooLarge => write!(f, "payload too large (max 4096 hex chars)"),
             Error::PayloadTooSmall => write!(f, "payload too small (min 6 bytes)"),
+            Error::MalformedLink(msg) => write!(f, "malformed inspect URL: {}", msg),
         }
     }
 }

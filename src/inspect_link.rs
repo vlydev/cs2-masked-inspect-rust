@@ -13,8 +13,14 @@ const MIN_BYTES: usize = 6;
 // ─────────────────────────────────────────────────────────────────────────────
 
 fn hex_decode(s: &str) -> Result<Vec<u8>, Error> {
+    // Pre-validation now lives in `deserialize` so we surface MalformedLink
+    // with full context (input preview, exact length). This helper still
+    // validates as a defense-in-depth measure for direct callers.
     if s.len() % 2 != 0 {
-        return Err(Error::ParseError("hex string has odd length".into()));
+        return Err(Error::MalformedLink(format!(
+            "hex payload has invalid length ({} chars, must be even)",
+            s.len()
+        )));
     }
     let mut bytes = Vec::with_capacity(s.len() / 2);
     let chars: Vec<u8> = s.bytes().collect();
@@ -31,7 +37,10 @@ fn hex_nibble(b: u8) -> Result<u8, Error> {
         b'0'..=b'9' => Ok(b - b'0'),
         b'a'..=b'f' => Ok(b - b'a' + 10),
         b'A'..=b'F' => Ok(b - b'A' + 10),
-        _ => Err(Error::ParseError(format!("invalid hex char: {}", b as char))),
+        _ => Err(Error::MalformedLink(format!(
+            "payload contains non-hex character: {:?}",
+            b as char
+        ))),
     }
 }
 
@@ -366,18 +375,45 @@ pub fn serialize(data: &ItemPreviewData) -> Result<String, Error> {
 pub fn deserialize(input: &str) -> Result<ItemPreviewData, Error> {
     let hex_str = extract_hex(input);
 
+    let preview: String = if input.chars().count() > 120 {
+        input.chars().take(100).collect::<String>() + "..."
+    } else {
+        input.to_string()
+    };
+
     if hex_str.is_empty() {
-        return Err(Error::ParseError("no hex payload found in input".into()));
+        return Err(Error::MalformedLink(format!(
+            "no hex payload found in input \"{}\"",
+            preview
+        )));
     }
 
     if hex_str.len() > MAX_HEX_LEN {
-        return Err(Error::PayloadTooLarge);
+        return Err(Error::MalformedLink(format!(
+            "payload too long (max {} hex chars); input \"{}\"",
+            MAX_HEX_LEN, preview
+        )));
+    }
+
+    // Reject malformed hex up-front with full context — source likely
+    // truncated the URL (real-world bug).
+    if hex_str.len() % 2 != 0 {
+        return Err(Error::MalformedLink(format!(
+            "hex payload has invalid length ({} chars, must be even and non-empty); source likely truncated; input \"{}\"",
+            hex_str.len(),
+            preview
+        )));
     }
 
     let raw = hex_decode(&hex_str)?;
 
     if raw.len() < MIN_BYTES {
-        return Err(Error::PayloadTooSmall);
+        return Err(Error::MalformedLink(format!(
+            "payload too short ({} bytes, need >={}); input \"{}\"",
+            raw.len(),
+            MIN_BYTES,
+            preview
+        )));
     }
 
     // First byte is key_byte
@@ -392,7 +428,10 @@ pub fn deserialize(input: &str) -> Result<ItemPreviewData, Error> {
 
     // payload = proto_bytes + 4-byte checksum
     if payload.len() < 4 {
-        return Err(Error::PayloadTooSmall);
+        return Err(Error::MalformedLink(format!(
+            "payload too short to contain checksum; input \"{}\"",
+            preview
+        )));
     }
 
     let proto_bytes = &payload[..payload.len() - 4];
@@ -401,7 +440,13 @@ pub fn deserialize(input: &str) -> Result<ItemPreviewData, Error> {
     // Decode protobuf (checksum is not verified on deserialization — native CS2 links
     // use a different key schedule that produces non-standard checksums; the checksum
     // is only meaningful for tool-generated links with key_byte == 0x00)
-    proto::decode_item(proto_bytes)
+    proto::decode_item(proto_bytes).map_err(|e| match e {
+        Error::MalformedLink(_) => e,
+        other => Error::MalformedLink(format!(
+            "protobuf decode failed ({}); payload likely corrupted or truncated; input \"{}\"",
+            other, preview
+        )),
+    })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
